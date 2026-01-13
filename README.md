@@ -91,13 +91,33 @@ Each completed payment generates **two ledger entries**:
 - JWT tokens are used to authorize requests between services.
 - Each microservice owns its **separate database** and does not directly access data from other services.
 - Data consistency is ensured through controlled service interactions rather than shared databases.
-## 5. Technologies Used
+
+## 5.  Distributed Transaction Consistency (Saga Pattern)
+
+To ensure consistency between microservices during payment processing, the system implements an *Orchestrated **Saga***. A dedicated *Saga Orchestrator Service* coordinates the distributed workflow:
+- Debit source account
+- Record debit in ledger
+- Credit destination account
+- Record credit in ledger
+- Mark payment as completed
+- Log the transaction in the audit service
+
+**If any step fails, compensating actions restore previous state:**
+- reversing debits/credits in Account Service
+- creating compensating ledger entries
+- marking payments as failed
+- writing failure events into the Audit Service
+
+This prevents inconsistencies, such as money being debited without appearing in the ledger, and guarantees system-wide transactional integrity without distributed ACID transactions.
+
+## 6. Technologies Used
 
 - Rust (primary programming language)
 - Web framework: Axum (or Actix-web)
 - Database: PostgreSQL (one per service)
 - Authentication: JWT
 - Containerization: Docker & Docker Compose
+- Saga for consistency between services
 - Data serialization: JSON
 
 ## 7. Project Limitations and Conclusion
