@@ -1,65 +1,42 @@
-use axum::{Json, extract::State};
-use bcrypt::{hash, verify};
-use uuid::Uuid;
-use chrono::Utc;
-use sqlx::query_as;
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    Json,
+};
+use serde::Serialize;
+use thiserror::Error;
 
-use crate::{db::Db, models::*, auth::create_token, error::AppError};
+#[derive(Error, Debug)]
+pub enum AppError {
+    #[error("Database error")]
+    Database,
 
-pub async fn register(
-    State(state): State<(Db, String)>,
-    Json(payload): Json<RegisterRequest>,
-) -> Result<Json<AuthResponse>, AppError> {
-    let (db, secret) = state;
+    #[error("Account not found")]
+    NotFound,
 
-    let hashed = hash(&payload.password, 12)
-        .map_err(|_| AppError::Database)?;
+    #[error("Insufficient funds")]
+    InsufficientFunds,
 
-    let user_id = Uuid::new_v4();
-
-    let result = sqlx::query(
-        "INSERT INTO users (id, email, password_hash, status, created_at)
-         VALUES ($1, $2, $3, $4, $5)"
-    )
-        .bind(user_id)
-        .bind(&payload.email)
-        .bind(hashed)
-        .bind("ACTIVE")
-        .bind(Utc::now())
-        .execute(&db)
-        .await;
-
-    if result.is_err() {
-        return Err(AppError::UserExists);
-    }
-
-    let token = create_token(&user_id.to_string(), &secret);
-
-    Ok(Json(AuthResponse { token }))
+    #[error("Unauthorized")]
+    Unauthorized,
 }
 
-pub async fn login(
-    State(state): State<(Db, String)>,
-    Json(payload): Json<LoginRequest>,
-) -> Result<Json<AuthResponse>, AppError> {
-    let (db, secret) = state;
+#[derive(Serialize)]
+struct ErrorResponse {
+    message: String,
+}
 
-    let user = query_as::<_, User>(
-        "SELECT * FROM users WHERE email = $1"
-    )
-        .bind(&payload.email)
-        .fetch_optional(&db)
-        .await
-        .map_err(|_| AppError::Database)?;
+impl IntoResponse for AppError {
+    fn into_response(self) -> Response {
+        let status = match self {
+            AppError::Database => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::NotFound => StatusCode::NOT_FOUND,
+            AppError::InsufficientFunds => StatusCode::BAD_REQUEST,
+            AppError::Unauthorized => StatusCode::UNAUTHORIZED,
+        };
 
-    let user = user.ok_or(AppError::InvalidCredentials)?;
-
-    if !verify(&payload.password, &user.password_hash)
-        .map_err(|_| AppError::InvalidCredentials)? {
-        return Err(AppError::InvalidCredentials);
+        (status, Json(ErrorResponse {
+            message: self.to_string(),
+        })).into_response()
     }
-
-    let token = create_token(&user.id.to_string(), &secret);
-
-    Ok(Json(AuthResponse { token }))
 }
