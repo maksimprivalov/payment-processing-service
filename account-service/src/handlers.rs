@@ -1,42 +1,101 @@
-use axum::{
-    http::StatusCode,
-    response::{IntoResponse, Response},
-    Json,
-};
-use serde::Serialize;
-use thiserror::Error;
+use axum::{Json, extract::{State, Path}, Extension};
+use uuid::Uuid;
+use chrono::Utc;
+use rust_decimal::Decimal;
+use rust_decimal::prelude::FromPrimitive;
 
-#[derive(Error, Debug)]
-pub enum AppError {
-    #[error("Database error")]
-    Database,
+use crate::{db::Db, models::*, error::AppError};
 
-    #[error("Account not found")]
-    NotFound,
+pub async fn create_account(
+    State(state): State<(Db, String)>,
+    Extension(user_id): Extension<Uuid>,
+    Json(payload): Json<CreateAccountRequest>,
+) -> Result<Json<Account>, AppError> {
 
-    #[error("Insufficient funds")]
-    InsufficientFunds,
+    let account_id = Uuid::new_v4();
 
-    #[error("Unauthorized")]
-    Unauthorized,
+    let account = sqlx::query_as::<_, Account>(
+        "INSERT INTO accounts (id, user_id, balance, currency, created_at)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING *"
+    )
+        .bind(account_id)
+        .bind(user_id) // ← БЕРЁМ ИЗ JWT
+        .bind(Decimal::new(0, 0))
+        .bind(payload.currency)
+        .bind(Utc::now())
+        .fetch_one(&state.0)
+        .await
+        .map_err(|_| AppError::Database)?;
+
+    Ok(Json(account))
 }
 
-#[derive(Serialize)]
-struct ErrorResponse {
-    message: String,
+
+pub async fn get_account(
+    State(db): State<Db>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<Account>, AppError> {
+
+    let account = sqlx::query_as::<_, Account>(
+        "SELECT * FROM accounts WHERE id = $1"
+    )
+        .bind(id)
+        .fetch_optional(&db)
+        .await
+        .map_err(|_| AppError::Database)?;
+
+    let account = account.ok_or(AppError::NotFound)?;
+
+    Ok(Json(account))
 }
 
-impl IntoResponse for AppError {
-    fn into_response(self) -> Response {
-        let status = match self {
-            AppError::Database => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::NotFound => StatusCode::NOT_FOUND,
-            AppError::InsufficientFunds => StatusCode::BAD_REQUEST,
-            AppError::Unauthorized => StatusCode::UNAUTHORIZED,
-        };
+pub async fn debit(
+    State(db): State<Db>,
+    Path(id): Path<Uuid>,
+    Json(payload): Json<AmountRequest>,
+) -> Result<Json<Account>, AppError> {
 
-        (status, Json(ErrorResponse {
-            message: self.to_string(),
-        })).into_response()
-    }
+    let amount = Decimal::from_f64(payload.amount)
+        .ok_or(AppError::Database)?;
+
+    let account = sqlx::query_as::<_, Account>(
+        "UPDATE accounts
+         SET balance = balance - $1
+         WHERE id = $2 AND balance >= $1
+         RETURNING *"
+    )
+        .bind(amount)
+        .bind(id)
+        .fetch_optional(&db)
+        .await
+        .map_err(|_| AppError::Database)?;
+
+    let account = account.ok_or(AppError::InsufficientFunds)?;
+
+    Ok(Json(account))
+}
+
+pub async fn credit(
+    State(db): State<Db>,
+    Path(id): Path<Uuid>,
+    Json(payload): Json<AmountRequest>,
+) -> Result<Json<Account>, AppError> {
+
+    let amount = Decimal::from_f64(payload.amount)
+        .ok_or(AppError::Database)?;
+
+    let account = sqlx::query_as::<_, Account>(
+        "UPDATE accounts
+         SET balance = balance + $1
+         WHERE id = $2
+         RETURNING *"
+    )
+        .bind(amount)
+        .bind(id)
+        .fetch_one(&db)
+        .await
+        .map_err(|_| AppError::Database)?;
+
+    Ok(Json(account))
 }

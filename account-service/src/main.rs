@@ -8,7 +8,7 @@ mod middleware;
 
 use axum::{
     Router,
-    routing::{post, get},
+    routing::{post},
     middleware as axum_middleware,
 };
 use dotenvy::dotenv;

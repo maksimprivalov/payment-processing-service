@@ -27,5 +27,27 @@ services:
     depends_on:
       - auth-db
 
+  account-db:
+    image: postgres:15
+    container_name: account-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: account_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - account-db_data:/var/lib/postgresql/data
+
+  account-service:
+    build: ./account-service
+    ports:
+      - "8081:8081"
+    environment:
+      DATABASE_URL: postgres://postgres:password@account-db:5432/account_db
+    depends_on:
+      - account-db
+
 volumes:
   auth_db_data:
+  account-db_data:

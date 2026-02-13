@@ -1,15 +1,4 @@
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-use chrono::{DateTime, Utc};
-
-#[derive(sqlx::FromRow, Serialize)]
-pub struct User {
-    pub id: Uuid,
-    pub email: String,
-    pub password_hash: String,
-    pub status: String,
-    pub created_at: DateTime<Utc>,
-}use serde::{Serialize, Deserialize};
+use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
