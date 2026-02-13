@@ -4,8 +4,13 @@ mod models;
 mod handlers;
 mod auth;
 mod error;
+mod middleware;
 
-use axum::{Router, routing::post};
+use axum::{
+    Router,
+    routing::{post, get},
+    middleware as axum_middleware,
+};
 use dotenvy::dotenv;
 use tokio::net::TcpListener;
 use tower_http::cors::CorsLayer;
@@ -13,6 +18,11 @@ use tower_http::cors::CorsLayer;
 use config::Config;
 use db::init_db;
 use handlers::{register, login};
+use middleware::auth_middleware;
+
+async fn me() -> &'static str {
+    "Authenticated"
+}
 
 #[tokio::main]
 async fn main() {
@@ -23,9 +33,17 @@ async fn main() {
 
     let state = (db, config.jwt_secret);
 
+    let protected_routes = Router::new()
+        .route("/me", get(me))
+        .layer(axum_middleware::from_fn_with_state(
+            state.clone(),
+            auth_middleware,
+        ));
+
     let app = Router::new()
         .route("/register", post(register))
         .route("/login", post(login))
+        .merge(protected_routes)
         .layer(CorsLayer::permissive())
         .with_state(state);
 

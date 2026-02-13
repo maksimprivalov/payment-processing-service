@@ -26,3 +26,15 @@ pub fn create_token(user_id: &str, secret: &str) -> String {
     )
         .unwrap()
 }
+
+use jsonwebtoken::{decode, DecodingKey, Validation};
+
+pub fn validate_token(token: &str, secret: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
+    let data = decode::<Claims>(
+        token,
+        &DecodingKey::from_secret(secret.as_bytes()),
+        &Validation::default(),
+    )?;
+
+    Ok(data.claims)
+}
