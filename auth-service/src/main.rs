@@ -1,4 +1,8 @@
 mod config;
+mod db;
+mod models;
+mod handlers;
+mod auth;
 
 use axum::{Router, routing::get};
 use std::net::SocketAddr;
