@@ -4,23 +4,35 @@ mod models;
 mod handlers;
 mod auth;
 
-use axum::{Router, routing::get};
-use std::net::SocketAddr;
+use axum::{Router, routing::post};
+use dotenvy::dotenv;
 use tokio::net::TcpListener;
+use tower_http::cors::CorsLayer;
 
-async fn healthcheck() -> &'static str {
-    "OK"
-}
+use config::Config;
+use db::init_db;
+use handlers::{register, login};
 
 #[tokio::main]
 async fn main() {
+    dotenv().ok();
+
+    let config = Config::from_env();
+    let db = init_db(&config.database_url).await;
+
+    let state = (db, config.jwt_secret);
+
     let app = Router::new()
-        .route("/health", get(healthcheck));
+        .route("/register", post(register))
+        .route("/login", post(login))
+        .layer(CorsLayer::permissive())
+        .with_state(state);
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
-    let listener = TcpListener::bind(addr).await.unwrap();
+    let listener = TcpListener::bind("0.0.0.0:8080")
+        .await
+        .unwrap();
 
-    println!("Running on {}", addr);
+    println!("Auth service running on 8080");
 
     axum::serve(listener, app)
         .await
