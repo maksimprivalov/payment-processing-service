@@ -11,11 +11,14 @@ pub enum AppError {
     #[error("Database error")]
     Database,
 
-    #[error("Invalid credentials")]
-    InvalidCredentials,
+    #[error("Account not found")]
+    NotFound,
 
-    #[error("User already exists")]
-    UserExists,
+    #[error("Insufficient funds")]
+    InsufficientFunds,
+
+    #[error("Unauthorized")]
+    Unauthorized,
 }
 
 #[derive(Serialize)]
@@ -27,14 +30,13 @@ impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let status = match self {
             AppError::Database => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::InvalidCredentials => StatusCode::UNAUTHORIZED,
-            AppError::UserExists => StatusCode::BAD_REQUEST,
+            AppError::NotFound => StatusCode::NOT_FOUND,
+            AppError::InsufficientFunds => StatusCode::BAD_REQUEST,
+            AppError::Unauthorized => StatusCode::UNAUTHORIZED,
         };
 
-        let body = Json(ErrorResponse {
+        (status, Json(ErrorResponse {
             message: self.to_string(),
-        });
-
-        (status, body).into_response()
+        })).into_response()
     }
 }
