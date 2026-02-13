@@ -3,6 +3,7 @@ mod db;
 mod models;
 mod handlers;
 mod auth;
+mod error;
 
 use axum::{Router, routing::post};
 use dotenvy::dotenv;
