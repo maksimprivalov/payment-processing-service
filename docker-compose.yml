@@ -41,10 +41,12 @@ services:
 
   account-service:
     build: ./account-service
+    container_name: account-service
     ports:
       - "8081:8081"
     environment:
       DATABASE_URL: postgres://postgres:password@account-db:5432/account_db
+      JWT_SECRET: super_secret_key
     depends_on:
       - account-db
 
