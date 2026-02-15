@@ -60,7 +60,7 @@ services:
     ports:
       - "5435:5432"
     volumes:
-      - account-db_data:/var/lib/postgresql/data
+      - payment-db_data:/var/lib/postgresql/data
 
   payment-service:
     build: ./payment-service
@@ -72,7 +72,31 @@ services:
       JWT_SECRET: super_secret_key
     depends_on:
       - payment-db
+
+  ledger-db:
+    image: postgres:15
+    container_name: ledger-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ledger_db
+    ports:
+      - "5436:5432"
+    volumes:
+          - ledger-db_data:/var/lib/postgresql/data
+
+  ledger-service:
+    build: ./ledger-service
+    container_name: ledger-service
+    ports:
+      - "8083:8083"
+    environment:
+      DATABASE_URL: postgres://postgres:password@ledger-db:5432/ledger_db
+      JWT_SECRET: super_secret_key
+    depends_on:
+      - ledger-db
 volumes:
   auth_db_data:
   account-db_data:
   payment-db_data:
+  ledger-db_data:
