@@ -12,8 +12,8 @@ FROM debian:bookworm-slim
 
 WORKDIR /app
 
-COPY --from=builder /app/target/release/payment-service .
+COPY --from=builder /app/target/release/ledger-service .
 
-EXPOSE 8082
+EXPOSE 8083
 
-CMD ["./payment-service"]
+CMD ["./ledger-service"]
