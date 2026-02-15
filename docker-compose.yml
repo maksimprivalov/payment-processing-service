@@ -49,7 +49,30 @@ services:
       JWT_SECRET: super_secret_key
     depends_on:
       - account-db
+      
+  payment-db:
+    image: postgres:15
+    container_name: payment-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: payment_db
+    ports:
+      - "5435:5432"
+    volumes:
+      - account-db_data:/var/lib/postgresql/data
 
+  payment-service:
+    build: ./payment-service
+    container_name: payment-service
+    ports:
+      - "8082:8082"
+    environment:
+      DATABASE_URL: postgres://postgres:password@payment-db:5432/payment_db
+      JWT_SECRET: super_secret_key
+    depends_on:
+      - payment-db
 volumes:
   auth_db_data:
   account-db_data:
+  payment-db_data:
