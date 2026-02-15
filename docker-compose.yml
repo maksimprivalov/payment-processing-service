@@ -95,6 +95,7 @@ services:
       JWT_SECRET: super_secret_key
     depends_on:
       - ledger-db
+      
 volumes:
   auth_db_data:
   account-db_data:
