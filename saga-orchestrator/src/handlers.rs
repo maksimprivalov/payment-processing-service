@@ -74,7 +74,7 @@ pub async fn transfer(
         .map_err(|_| AppError::ServiceCall)?;
 
     if !ledger_debit_res.status().is_success() {
-        compensate_refund(&client, &config, payload.from_account, payload.amount, &token).await;
+        compensate_refund(&client, &config, payload.from_account, payload.amount, token).await;
         audit_failure(&client, &config, "LEDGER_DEBIT_FAILED").await;
         mark_payment_failed(&client, &config, token, &payment_id).await;
         return Err(AppError::ServiceCall);
@@ -90,7 +90,7 @@ pub async fn transfer(
         .map_err(|_| AppError::ServiceCall)?;
 
     if !credit_res.status().is_success() {
-        compensate_refund(&client, &config, payload.from_account, payload.amount, &token).await;
+        compensate_refund(&client, &config, payload.from_account, payload.amount, token).await;
         audit_failure(&client, &config, "CREDIT_FAILED").await;
         mark_payment_failed(&client, &config, token, &payment_id).await;
         return Err(AppError::ServiceCall);
@@ -112,8 +112,8 @@ pub async fn transfer(
 
     if !ledger_credit_res.status().is_success() {
         // rollback credit
-        compensate_debit(&client, &config, payload.to_account, payload.amount, &token).await;
-        compensate_refund(&client, &config, payload.from_account, payload.amount, &token).await;
+        compensate_debit(&client, &config, payload.to_account, payload.amount, token).await;
+        compensate_refund(&client, &config, payload.from_account, payload.amount, token).await;
         audit_failure(&client, &config, "LEDGER_CREDIT_FAILED").await;
         mark_payment_failed(&client, &config, token, &payment_id).await;
         return Err(AppError::ServiceCall);
