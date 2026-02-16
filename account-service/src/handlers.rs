@@ -20,7 +20,7 @@ pub async fn create_account(
          RETURNING *"
     )
         .bind(account_id)
-        .bind(user_id) // ← БЕРЁМ ИЗ JWT
+        .bind(user_id)
         .bind(Decimal::new(0, 0))
         .bind(payload.currency)
         .bind(Utc::now())
@@ -33,7 +33,7 @@ pub async fn create_account(
 
 
 pub async fn get_account(
-    State(db): State<Db>,
+    State(state): State<(Db, String)>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Account>, AppError> {
 
@@ -41,7 +41,7 @@ pub async fn get_account(
         "SELECT * FROM accounts WHERE id = $1"
     )
         .bind(id)
-        .fetch_optional(&db)
+        .fetch_optional(&state.0)
         .await
         .map_err(|_| AppError::Database)?;
 
@@ -51,7 +51,7 @@ pub async fn get_account(
 }
 
 pub async fn debit(
-    State(db): State<Db>,
+    State(state): State<(Db, String)>,
     Path(id): Path<Uuid>,
     Json(payload): Json<AmountRequest>,
 ) -> Result<Json<Account>, AppError> {
@@ -67,7 +67,7 @@ pub async fn debit(
     )
         .bind(amount)
         .bind(id)
-        .fetch_optional(&db)
+        .fetch_optional(&state.0)
         .await
         .map_err(|_| AppError::Database)?;
 
@@ -77,13 +77,14 @@ pub async fn debit(
 }
 
 pub async fn credit(
-    State(db): State<Db>,
+    State(state): State<(Db, String)>,
     Path(id): Path<Uuid>,
     Json(payload): Json<AmountRequest>,
 ) -> Result<Json<Account>, AppError> {
 
     let amount = Decimal::from_f64(payload.amount)
         .ok_or(AppError::Database)?;
+
 
     let account = sqlx::query_as::<_, Account>(
         "UPDATE accounts
@@ -93,7 +94,7 @@ pub async fn credit(
     )
         .bind(amount)
         .bind(id)
-        .fetch_one(&db)
+        .fetch_one(&state.0)
         .await
         .map_err(|_| AppError::Database)?;
 

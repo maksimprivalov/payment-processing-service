@@ -8,7 +8,7 @@ mod middleware;
 
 use axum::{
     Router,
-    routing::{post},
+    routing::{post, get},
     middleware as axum_middleware,
 };
 use dotenvy::dotenv;
@@ -31,10 +31,14 @@ async fn main() {
 
     let protected = Router::new()
         .route("/accounts", post(create_account))
+        .route("/accounts/:id/debit", post(debit))
+        .route("/accounts/:id/credit", post(credit))
+        .route("/accounts/:id", get(get_account))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,
         ));
+
 
     let app = Router::new()
         .merge(protected)
