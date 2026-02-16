@@ -117,7 +117,23 @@ services:
       DATABASE_URL: postgres://postgres:password@audit-db:5432/audit_db
     depends_on:
       - audit-db
-      
+
+  saga-orchestrator:
+    build: ./saga-orchestrator
+    container_name: saga-orchestrator
+    ports:
+      - "8085:8085"
+    environment:
+      PAYMENT_URL: http://payment-service:8082
+      ACCOUNT_URL: http://account-service:8081
+      LEDGER_URL: http://ledger-service:8083
+      AUDIT_URL: http://audit-service:8084
+    depends_on:
+      - payment-service
+      - account-service
+      - ledger-service
+      - audit-service
+
 volumes:
   auth_db_data:
   account-db_data:
