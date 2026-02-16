@@ -16,6 +16,9 @@ pub enum AppError {
 
     #[error("User already exists")]
     UserExists,
+
+    #[error("Service call failed")]
+    ServiceCall,
 }
 
 #[derive(Serialize)]
@@ -26,6 +29,7 @@ struct ErrorResponse {
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let status = match self {
+            AppError::ServiceCall => StatusCode::BAD_GATEWAY,
             AppError::Database => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::InvalidCredentials => StatusCode::UNAUTHORIZED,
             AppError::UserExists => StatusCode::BAD_REQUEST,
