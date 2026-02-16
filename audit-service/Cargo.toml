@@ -1,0 +1,21 @@
+[package]
+name = "audit-service"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = "0.7"
+tokio = { version = "1.36", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.4", features = ["v4", "serde"] }
+sqlx = { version = "0.7", features = [
+    "postgres",
+    "runtime-tokio",
+    "uuid",
+    "chrono"
+] }
+dotenvy = "0.15"
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "1.0"
+tower-http = { version = "0.5", features = ["cors"] }
