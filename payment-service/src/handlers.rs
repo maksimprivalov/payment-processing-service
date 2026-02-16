@@ -1,4 +1,4 @@
-use axum::{Json, extract::{State, Extension}};
+use axum::{Json, extract::{Path, State, Extension}};
 use uuid::Uuid;
 use chrono::Utc;
 use rust_decimal::Decimal;
@@ -35,4 +35,36 @@ pub async fn create_payment(
         .map_err(|_| AppError::Database)?;
 
     Ok(Json(payment))
+}
+
+pub async fn complete_payment(
+    State(db): State<(Db, String)>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<String>, AppError> {
+
+    sqlx::query(
+        "UPDATE payments SET status = 'COMPLETED' WHERE id = $1"
+    )
+        .bind(id)
+        .execute(&db.0)
+        .await
+        .map_err(|_| AppError::Database)?;
+
+    Ok(Json("Payment completed".to_string()))
+}
+
+pub async fn fail_payment(
+    State(db): State<(Db, String)>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<String>, AppError> {
+
+    sqlx::query(
+        "UPDATE payments SET status = 'FAILED' WHERE id = $1"
+    )
+        .bind(id)
+        .execute(&db.0)
+        .await
+        .map_err(|_| AppError::Database)?;
+
+    Ok(Json("Payment failed".to_string()))
 }
