@@ -95,9 +95,32 @@ services:
       JWT_SECRET: super_secret_key
     depends_on:
       - ledger-db
+
+  audit-db:
+    image: postgres:15
+    container_name: audit-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: audit_db
+    ports:
+      - "5437:5432"
+    volumes:
+      - audit-db_data:/var/lib/postgresql/data
+
+  audit-service:
+    build: ./audit-service
+    container_name: audit-service
+    ports:
+      - "8084:8084"
+    environment:
+      DATABASE_URL: postgres://postgres:password@audit-db:5432/audit_db
+    depends_on:
+      - audit-db
       
 volumes:
   auth_db_data:
   account-db_data:
   payment-db_data:
   ledger-db_data:
+  audit-db_data:
