@@ -111,8 +111,8 @@ services:
   audit-service:
     build: ./audit-service
     container_name: audit-service
-    ports:
-      - "8084:8084"
+    expose:
+      - "8084"
     environment:
       DATABASE_URL: postgres://postgres:password@audit-db:5432/audit_db
     depends_on:
