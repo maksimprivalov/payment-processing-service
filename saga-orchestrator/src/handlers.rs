@@ -55,6 +55,7 @@ pub async fn transfer(
 
     if !debit_res.status().is_success() {
         audit_failure(&client, &config, "DEBIT_FAILED").await;
+        mark_payment_failed(&client, &config, token, &payment_id).await;
         return Err(AppError::ServiceCall);
     }
 
@@ -75,6 +76,7 @@ pub async fn transfer(
     if !ledger_debit_res.status().is_success() {
         compensate_refund(&client, &config, payload.from_account, payload.amount, &token).await;
         audit_failure(&client, &config, "LEDGER_DEBIT_FAILED").await;
+        mark_payment_failed(&client, &config, token, &payment_id).await;
         return Err(AppError::ServiceCall);
     }
 
@@ -90,6 +92,7 @@ pub async fn transfer(
     if !credit_res.status().is_success() {
         compensate_refund(&client, &config, payload.from_account, payload.amount, &token).await;
         audit_failure(&client, &config, "CREDIT_FAILED").await;
+        mark_payment_failed(&client, &config, token, &payment_id).await;
         return Err(AppError::ServiceCall);
     }
 
@@ -112,6 +115,7 @@ pub async fn transfer(
         compensate_debit(&client, &config, payload.to_account, payload.amount, &token).await;
         compensate_refund(&client, &config, payload.from_account, payload.amount, &token).await;
         audit_failure(&client, &config, "LEDGER_CREDIT_FAILED").await;
+        mark_payment_failed(&client, &config, token, &payment_id).await;
         return Err(AppError::ServiceCall);
     }
 
@@ -145,7 +149,18 @@ async fn compensate_debit(client: &Client, config: &Config, account: Uuid, amoun
         .send()
         .await;
 }
-
+async fn mark_payment_failed(
+    client: &Client,
+    config: &Config,
+    token: &str,
+    payment_id: &str,
+) {
+    let _ = client
+        .post(format!("{}/payments/{}/fail", config.payment_url, payment_id))
+        .bearer_auth(token)
+        .send()
+        .await;
+}
 async fn audit_failure(client: &Client, config: &Config, reason: &str) {
     let _ = client
         .post(format!("{}/audit", config.audit_url))
