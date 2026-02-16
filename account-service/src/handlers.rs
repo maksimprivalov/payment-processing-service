@@ -34,13 +34,16 @@ pub async fn create_account(
 
 pub async fn get_account(
     State(state): State<(Db, String)>,
+    Extension(user_id): Extension<Uuid>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Account>, AppError> {
 
     let account = sqlx::query_as::<_, Account>(
-        "SELECT * FROM accounts WHERE id = $1"
+        "SELECT * FROM accounts
+         WHERE id = $1 AND user_id = $2"
     )
         .bind(id)
+        .bind(user_id)
         .fetch_optional(&state.0)
         .await
         .map_err(|_| AppError::Database)?;
@@ -52,6 +55,7 @@ pub async fn get_account(
 
 pub async fn debit(
     State(state): State<(Db, String)>,
+    Extension(user_id): Extension<Uuid>,
     Path(id): Path<Uuid>,
     Json(payload): Json<AmountRequest>,
 ) -> Result<Json<Account>, AppError> {
@@ -62,11 +66,14 @@ pub async fn debit(
     let account = sqlx::query_as::<_, Account>(
         "UPDATE accounts
          SET balance = balance - $1
-         WHERE id = $2 AND balance >= $1
+         WHERE id = $2
+           AND user_id = $3
+           AND balance >= $1
          RETURNING *"
     )
         .bind(amount)
         .bind(id)
+        .bind(user_id)
         .fetch_optional(&state.0)
         .await
         .map_err(|_| AppError::Database)?;
@@ -78,6 +85,7 @@ pub async fn debit(
 
 pub async fn credit(
     State(state): State<(Db, String)>,
+    Extension(user_id): Extension<Uuid>,
     Path(id): Path<Uuid>,
     Json(payload): Json<AmountRequest>,
 ) -> Result<Json<Account>, AppError> {
@@ -85,18 +93,21 @@ pub async fn credit(
     let amount = Decimal::from_f64(payload.amount)
         .ok_or(AppError::Database)?;
 
-
     let account = sqlx::query_as::<_, Account>(
         "UPDATE accounts
          SET balance = balance + $1
          WHERE id = $2
+           AND user_id = $3
          RETURNING *"
     )
         .bind(amount)
         .bind(id)
-        .fetch_one(&state.0)
+        .bind(user_id)
+        .fetch_optional(&state.0)
         .await
         .map_err(|_| AppError::Database)?;
+
+    let account = account.ok_or(AppError::NotFound)?;
 
     Ok(Json(account))
 }
