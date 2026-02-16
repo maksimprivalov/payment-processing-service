@@ -22,7 +22,7 @@ pub async fn transfer(
     let token = auth_header
         .strip_prefix("Bearer ")
         .ok_or(AppError::ServiceCall)?;
-
+    println!("STEP 1: Creating payment...");
     // Create payment
     let payment_res = client
         .post(format!("{}/payments", config.payment_url))
@@ -43,7 +43,7 @@ pub async fn transfer(
         .as_str()
         .ok_or(AppError::ServiceCall)?
         .to_string();
-
+    println!("STEP 2: Debit...");
     // Debit
     let debit_res = client
         .post(format!("{}/accounts/{}/debit", config.account_url, payload.from_account))
@@ -58,7 +58,7 @@ pub async fn transfer(
         mark_payment_failed(&client, &config, token, &payment_id).await;
         return Err(AppError::ServiceCall);
     }
-
+    println!("STEP 3: l Debit...");
     // Ledger DEBIT
     let ledger_debit_res = client
         .post(format!("{}/ledger", config.ledger_url))
@@ -79,7 +79,7 @@ pub async fn transfer(
         mark_payment_failed(&client, &config, token, &payment_id).await;
         return Err(AppError::ServiceCall);
     }
-
+    println!("STEP 4: credit...");
     // Credit
     let credit_res = client
         .post(format!("{}/accounts/{}/credit", config.account_url, payload.to_account))
@@ -95,7 +95,7 @@ pub async fn transfer(
         mark_payment_failed(&client, &config, token, &payment_id).await;
         return Err(AppError::ServiceCall);
     }
-
+    println!("STEP 5: leg cr...");
     // Ledger CREDIT
     let ledger_credit_res = client
         .post(format!("{}/ledger", config.ledger_url))
@@ -118,7 +118,7 @@ pub async fn transfer(
         mark_payment_failed(&client, &config, token, &payment_id).await;
         return Err(AppError::ServiceCall);
     }
-
+    println!("STEP 6: finalee..");
     // Update payment
     client
         .post(format!("{}/payments/{}/complete", config.payment_url, payment_id))
