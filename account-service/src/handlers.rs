@@ -85,7 +85,6 @@ pub async fn debit(
 
 pub async fn credit(
     State(state): State<(Db, String)>,
-    Extension(user_id): Extension<Uuid>,
     Path(id): Path<Uuid>,
     Json(payload): Json<AmountRequest>,
 ) -> Result<Json<Account>, AppError> {
@@ -97,12 +96,10 @@ pub async fn credit(
         "UPDATE accounts
          SET balance = balance + $1
          WHERE id = $2
-           AND user_id = $3
          RETURNING *"
     )
         .bind(amount)
         .bind(id)
-        .bind(user_id)
         .fetch_optional(&state.0)
         .await
         .map_err(|_| AppError::Database)?;

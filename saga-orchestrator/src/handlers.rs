@@ -1,15 +1,27 @@
 use axum::{Json, extract::State};
 use reqwest::Client;
 use uuid::Uuid;
+use axum::http::HeaderMap;
+use headers::{Authorization, authorization::Bearer};
 
 use crate::{config::Config, error::AppError, models::TransferRequest};
 
 pub async fn transfer(
     State(config): State<Config>,
+    headers: HeaderMap,
     Json(payload): Json<TransferRequest>,
 ) -> Result<Json<String>, AppError> {
 
     let client = Client::new();
+    // getting token
+    let auth_header = headers
+        .get(axum::http::header::AUTHORIZATION)
+        .and_then(|value| value.to_str().ok())
+        .ok_or(AppError::ServiceCall)?;
+
+    let token = auth_header
+        .strip_prefix("Bearer ")
+        .ok_or(AppError::ServiceCall)?;
 
     // Create payment
     let payment_res = client
