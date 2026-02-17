@@ -3,7 +3,7 @@ use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 
-#[derive(sqlx::FromRow, Serialize)]
+#[derive(sqlx::FromRow, Serialize, Debug)]
 pub struct Account {
     pub id: Uuid,
     pub user_id: Uuid,
