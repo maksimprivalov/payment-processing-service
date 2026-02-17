@@ -1,19 +1,32 @@
 use axum::{Json, extract::State};
 use reqwest::Client;
 use uuid::Uuid;
+use axum::http::HeaderMap;
+use headers::{Authorization, authorization::Bearer};
 
 use crate::{config::Config, error::AppError, models::TransferRequest};
 
 pub async fn transfer(
     State(config): State<Config>,
+    headers: HeaderMap,
     Json(payload): Json<TransferRequest>,
 ) -> Result<Json<String>, AppError> {
 
     let client = Client::new();
+    // getting token
+    let auth_header = headers
+        .get(axum::http::header::AUTHORIZATION)
+        .and_then(|value| value.to_str().ok())
+        .ok_or(AppError::ServiceCall)?;
 
+    let token = auth_header
+        .strip_prefix("Bearer ")
+        .ok_or(AppError::ServiceCall)?;
+    println!("STEP 1: Creating payment...");
     // Create payment
     let payment_res = client
         .post(format!("{}/payments", config.payment_url))
+        .bearer_auth(token)
         .json(&payload)
         .send()
         .await
@@ -30,20 +43,22 @@ pub async fn transfer(
         .as_str()
         .ok_or(AppError::ServiceCall)?
         .to_string();
-
+    println!("STEP 2: Debit...");
     // Debit
     let debit_res = client
         .post(format!("{}/accounts/{}/debit", config.account_url, payload.from_account))
         .json(&serde_json::json!({ "amount": payload.amount }))
+        .bearer_auth(token)
         .send()
         .await
         .map_err(|_| AppError::ServiceCall)?;
 
     if !debit_res.status().is_success() {
         audit_failure(&client, &config, "DEBIT_FAILED").await;
+        mark_payment_failed(&client, &config, token, &payment_id).await;
         return Err(AppError::ServiceCall);
     }
-
+    println!("STEP 3: l Debit...");
     // Ledger DEBIT
     let ledger_debit_res = client
         .post(format!("{}/ledger", config.ledger_url))
@@ -53,30 +68,34 @@ pub async fn transfer(
             "entry_type": "DEBIT",
             "amount": payload.amount
         }))
+        .bearer_auth(token)
         .send()
         .await
         .map_err(|_| AppError::ServiceCall)?;
 
     if !ledger_debit_res.status().is_success() {
-        compensate_refund(&client, &config, payload.from_account, payload.amount).await;
+        compensate_refund(&client, &config, payload.from_account, payload.amount, token).await;
         audit_failure(&client, &config, "LEDGER_DEBIT_FAILED").await;
+        mark_payment_failed(&client, &config, token, &payment_id).await;
         return Err(AppError::ServiceCall);
     }
-
+    println!("STEP 4: credit...");
     // Credit
     let credit_res = client
         .post(format!("{}/accounts/{}/credit", config.account_url, payload.to_account))
         .json(&serde_json::json!({ "amount": payload.amount }))
+        .bearer_auth(token)
         .send()
         .await
         .map_err(|_| AppError::ServiceCall)?;
 
     if !credit_res.status().is_success() {
-        compensate_refund(&client, &config, payload.from_account, payload.amount).await;
+        compensate_refund(&client, &config, payload.from_account, payload.amount, token).await;
         audit_failure(&client, &config, "CREDIT_FAILED").await;
+        mark_payment_failed(&client, &config, token, &payment_id).await;
         return Err(AppError::ServiceCall);
     }
-
+    println!("STEP 5: leg cr...");
     // Ledger CREDIT
     let ledger_credit_res = client
         .post(format!("{}/ledger", config.ledger_url))
@@ -86,21 +105,24 @@ pub async fn transfer(
             "entry_type": "CREDIT",
             "amount": payload.amount
         }))
+        .bearer_auth(token)
         .send()
         .await
         .map_err(|_| AppError::ServiceCall)?;
 
     if !ledger_credit_res.status().is_success() {
         // rollback credit
-        compensate_debit(&client, &config, payload.to_account, payload.amount).await;
-        compensate_refund(&client, &config, payload.from_account, payload.amount).await;
+        compensate_debit(&client, &config, payload.to_account, payload.amount, token).await;
+        compensate_refund(&client, &config, payload.from_account, payload.amount, token).await;
         audit_failure(&client, &config, "LEDGER_CREDIT_FAILED").await;
+        mark_payment_failed(&client, &config, token, &payment_id).await;
         return Err(AppError::ServiceCall);
     }
-
+    println!("STEP 6: finalee..");
     // Update payment
     client
         .post(format!("{}/payments/{}/complete", config.payment_url, payment_id))
+        .bearer_auth(token)
         .send()
         .await
         .ok();
@@ -110,22 +132,35 @@ pub async fn transfer(
     Ok(Json("Transfer completed successfully".to_string()))
 }
 
-async fn compensate_refund(client: &Client, config: &Config, account: Uuid, amount: f64) {
+async fn compensate_refund(client: &Client, config: &Config, account: Uuid, amount: f64, token: &str) {
     let _ = client
         .post(format!("{}/accounts/{}/credit", config.account_url, account))
+        .bearer_auth(token)
         .json(&serde_json::json!({ "amount": amount }))
         .send()
         .await;
 }
 
-async fn compensate_debit(client: &Client, config: &Config, account: Uuid, amount: f64) {
+async fn compensate_debit(client: &Client, config: &Config, account: Uuid, amount: f64, token: &str) {
     let _ = client
         .post(format!("{}/accounts/{}/debit", config.account_url, account))
+        .bearer_auth(token)
         .json(&serde_json::json!({ "amount": amount }))
         .send()
         .await;
 }
-
+async fn mark_payment_failed(
+    client: &Client,
+    config: &Config,
+    token: &str,
+    payment_id: &str,
+) {
+    let _ = client
+        .post(format!("{}/payments/{}/fail", config.payment_url, payment_id))
+        .bearer_auth(token)
+        .send()
+        .await;
+}
 async fn audit_failure(client: &Client, config: &Config, reason: &str) {
     let _ = client
         .post(format!("{}/audit", config.audit_url))

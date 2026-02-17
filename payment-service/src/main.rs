@@ -17,7 +17,7 @@ use tower_http::cors::CorsLayer;
 
 use config::Config;
 use db::init_db;
-use handlers::create_payment;
+use handlers::*;
 use middleware::auth_middleware;
 
 #[tokio::main]
@@ -32,6 +32,8 @@ async fn main() {
 
     let protected_routes = Router::new()
         .route("/payments", post(create_payment))
+        .route("/payments/:id/complete", post(complete_payment))
+        .route("/payments/:id/fail", post(fail_payment))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,
