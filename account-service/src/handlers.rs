@@ -75,8 +75,6 @@ pub async fn debit(
         .await
         .unwrap();
 
-    println!("Account from DB: {:?}", existing);
-
     let account = match sqlx::query_as::<_, Account>(
         "UPDATE accounts
          SET balance = balance - $1

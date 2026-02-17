@@ -22,6 +22,17 @@ pub async fn transfer(
     let token = auth_header
         .strip_prefix("Bearer ")
         .ok_or(AppError::ServiceCall)?;
+
+    if payload.from_account == payload.to_account {
+        println!("Fraud attempt: same account transfer");
+        return Err(AppError::Fraud);
+    }
+
+    if payload.amount <= 0.0 {
+        println!("Invalid amount");
+        return Err(AppError::Fraud);
+    }
+
     println!("STEP 1: Creating payment...");
     // Create payment
     let payment_res = client
@@ -43,6 +54,7 @@ pub async fn transfer(
         .as_str()
         .ok_or(AppError::ServiceCall)?
         .to_string();
+
     println!("STEP 2: Debit...");
     // Debit
     let debit_res = client

@@ -19,6 +19,9 @@ pub enum AppError {
 
     #[error("Service call failed")]
     ServiceCall,
+
+    #[error("Fraud detected (money logic error)")]
+    Fraud,
 }
 
 #[derive(Serialize)]
@@ -33,6 +36,7 @@ impl IntoResponse for AppError {
             AppError::Database => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::InvalidCredentials => StatusCode::UNAUTHORIZED,
             AppError::UserExists => StatusCode::BAD_REQUEST,
+            AppError::Fraud => StatusCode::FORBIDDEN,
         };
 
         let body = Json(ErrorResponse {
