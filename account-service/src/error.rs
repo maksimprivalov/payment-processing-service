@@ -19,6 +19,9 @@ pub enum AppError {
 
     #[error("Unauthorized")]
     Unauthorized,
+
+    #[error("Money logic error")]
+    Fraud,
 }
 
 #[derive(Serialize)]
@@ -33,6 +36,7 @@ impl IntoResponse for AppError {
             AppError::NotFound => StatusCode::NOT_FOUND,
             AppError::InsufficientFunds => StatusCode::BAD_REQUEST,
             AppError::Unauthorized => StatusCode::UNAUTHORIZED,
+            AppError::Fraud => StatusCode::FORBIDDEN,
         };
 
         (status, Json(ErrorResponse {
