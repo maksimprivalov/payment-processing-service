@@ -34,6 +34,7 @@ async fn main() {
         .route("/accounts/:id/debit", post(debit))
         .route("/accounts/:id/credit", post(credit))
         .route("/accounts/:id", get(get_account))
+        .route("/accounts", get(get_accounts))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,
