@@ -1,0 +1,54 @@
+.auth-wrapper {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #ffffff;
+  font-family: Arial, sans-serif;
+}
+
+.card {
+  width: 320px;
+  padding: 40px;
+  border: 1px solid #000;
+  background: #fff;
+}
+
+h1 {
+  margin-bottom: 25px;
+  font-weight: 600;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 12px;
+  border: 1px solid #000;
+  background: #fff;
+  color: #000;
+}
+
+input:focus {
+  outline: none;
+  border-width: 2px;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  background: #000;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error {
+  margin-top: 10px;
+  color: #000;
+  font-size: 13px;
+}

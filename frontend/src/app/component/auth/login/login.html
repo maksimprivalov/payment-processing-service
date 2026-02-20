@@ -1,1 +1,25 @@
-<p>login works!</p>
+<div class="auth-wrapper">
+  <div class="card">
+
+    <h1>Sign in</h1>
+
+    <input
+      type="email"
+      placeholder="Email"
+      [(ngModel)]="email"
+    />
+
+    <input
+      type="password"
+      placeholder="Password"
+      [(ngModel)]="password"
+    />
+
+    <button (click)="login()" [disabled]="loading">
+      {{ loading ? 'Signing in...' : 'Sign in' }}
+    </button>
+
+    <p class="error" *ngIf="error">{{ error }}</p>
+
+  </div>
+</div>
