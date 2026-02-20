@@ -16,14 +16,7 @@ pub async fn transfer(
 
     let client = Client::new();
     // getting token
-    let auth_header = headers
-        .get(axum::http::header::AUTHORIZATION)
-        .and_then(|value| value.to_str().ok())
-        .ok_or(AppError::ServiceCall)?;
-
-    let token = auth_header
-        .strip_prefix("Bearer ")
-        .ok_or(AppError::ServiceCall)?;
+let token = extract_token(&headers)?;
 
     if payload.from_account == payload.to_account {
         println!("Fraud attempt: same account transfer");
@@ -205,14 +198,7 @@ pub async fn get_accounts(
     headers: HeaderMap,
 ) -> Result<Json<serde_json::Value>, AppError> {
 
-    let auth_header = headers
-        .get(axum::http::header::AUTHORIZATION)
-        .and_then(|value| value.to_str().ok())
-        .ok_or(AppError::ServiceCall)?;
-
-    let token = auth_header
-        .strip_prefix("Bearer ")
-        .ok_or(AppError::ServiceCall)?;
+let token = extract_token(&headers)?;
 
     let client = Client::new();
 
@@ -237,14 +223,7 @@ pub async fn credit_account(
     Json(payload): Json<AmountRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
 
-    let auth_header = headers
-        .get(axum::http::header::AUTHORIZATION)
-        .and_then(|value| value.to_str().ok())
-        .ok_or(AppError::ServiceCall)?;
-
-    let token = auth_header
-        .strip_prefix("Bearer ")
-        .ok_or(AppError::ServiceCall)?;
+let token = extract_token(&headers)?;
 
     let client = Client::new();
 
@@ -269,14 +248,7 @@ pub async fn get_transactions(
     Path(account_id): Path<Uuid>,
 ) -> Result<Json<serde_json::Value>, AppError> {
 
-    let auth_header = headers
-        .get(axum::http::header::AUTHORIZATION)
-        .and_then(|value| value.to_str().ok())
-        .ok_or(AppError::ServiceCall)?;
-
-    let token = auth_header
-        .strip_prefix("Bearer ")
-        .ok_or(AppError::ServiceCall)?;
+let token = extract_token(&headers)?;
     let client = Client::new();
 
     let res = client
@@ -291,4 +263,15 @@ pub async fn get_transactions(
         .map_err(|_| AppError::ServiceCall)?;
 
     Ok(Json(body))
+}
+
+fn extract_token(headers: &HeaderMap) -> Result<&str, AppError> {
+    let auth_header = headers
+        .get(axum::http::header::AUTHORIZATION)
+        .and_then(|value| value.to_str().ok())
+        .ok_or(AppError::ServiceCall)?;
+
+    auth_header
+        .strip_prefix("Bearer ")
+        .ok_or(AppError::ServiceCall)
 }
