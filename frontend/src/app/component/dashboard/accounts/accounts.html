@@ -1,7 +1,7 @@
 <div class="container">
 
   <div class="topbar">
-    <h2>PBS Dashboard</h2>
+    <h2>PPS Dashboard</h2>
 
     <div class="actions">
       <button (click)="goToList()">Accounts</button>
@@ -39,7 +39,6 @@
 
     <ng-container *ngIf="accounts?.length">
 
-        <!-- from account -->
         <label>From account</label>
         <select [(ngModel)]="fromAccount">
         <option value="" disabled>Select account</option>
@@ -48,11 +47,9 @@
         </option>
         </select>
 
-        <!-- to account -->
         <label>To account ID</label>
         <input placeholder="Recipient account id" [(ngModel)]="toAccount">
 
-        <!-- amount -->
         <label>Amount</label>
         <input type="number" placeholder="Amount" [(ngModel)]="transferAmount">
 
