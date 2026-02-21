@@ -4,6 +4,12 @@
   font-family: Arial, sans-serif;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 .topbar {
   display: flex;
   justify-content: space-between;
