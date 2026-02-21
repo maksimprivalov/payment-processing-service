@@ -150,6 +150,15 @@ services:
       - ledger-service
       - audit-service
 
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - saga-orchestrator
+      - auth-service
+      
 volumes:
   auth_db_data:
   account-db_data:
