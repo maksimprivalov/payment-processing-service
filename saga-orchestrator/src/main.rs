@@ -17,6 +17,7 @@ use handlers::{
     get_accounts,
     credit_account,
     get_transactions,
+    create_account
 };
 
 #[tokio::main]
@@ -30,6 +31,7 @@ async fn main() {
         .route("/accounts", get(get_accounts))
         .route("/accounts/:id/credit", post(credit_account))
         .route("/transactions/:account_id", get(get_transactions))
+        .route("/accounts", post(create_account))
         .layer(CorsLayer::permissive())
         .with_state(config);
 

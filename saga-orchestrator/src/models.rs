@@ -27,3 +27,8 @@ pub struct LedgerEntryDto {
 pub struct AmountRequest {
     pub amount: f64,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateAccountRequest {
+    pub currency: String,
+}

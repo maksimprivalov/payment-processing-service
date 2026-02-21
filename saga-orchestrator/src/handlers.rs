@@ -6,7 +6,7 @@ use headers::{Authorization, authorization::Bearer};
 use axum::extract::Path;
 
 use crate::{config::Config, error::AppError, models::TransferRequest};
-use crate::models::AmountRequest;
+use crate::models::{AmountRequest, CreateAccountRequest};
 
 pub async fn transfer(
     State(config): State<Config>,
@@ -264,7 +264,33 @@ let token = extract_token(&headers)?;
 
     Ok(Json(body))
 }
+pub async fn create_account(
+    State(config): State<Config>,
+    headers: HeaderMap,
+    Json(payload): Json<CreateAccountRequest>,
+) -> Result<Json<serde_json::Value>, AppError> {
 
+    let token = extract_token(&headers)?;
+    let client = Client::new();
+
+    let res = client
+        .post(format!("{}/accounts", config.account_url))
+        .bearer_auth(token)
+        .json(&payload)
+        .send()
+        .await
+        .map_err(|_| AppError::ServiceCall)?;
+
+    if !res.status().is_success() {
+        return Err(AppError::ServiceCall);
+    }
+
+    let body = res.json::<serde_json::Value>()
+        .await
+        .map_err(|_| AppError::ServiceCall)?;
+
+    Ok(Json(body))
+}
 fn extract_token(headers: &HeaderMap) -> Result<&str, AppError> {
     let auth_header = headers
         .get(axum::http::header::AUTHORIZATION)
