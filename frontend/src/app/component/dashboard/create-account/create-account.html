@@ -6,7 +6,10 @@
     <option value="USD">USD</option>
   </select>
 
-  <button (click)="create()">Create</button>
+  <button (click)="create()" [disabled]="loading">
+    {{ loading ? 'Creating...' : 'Create' }}
+  </button>
 
-  <p *ngIf="success">{{ success }}</p>
+  <p class="success" *ngIf="success">{{ success }}</p>
+  <p class="error" *ngIf="error">{{ error }}</p>
 </div>

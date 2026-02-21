@@ -37,3 +37,9 @@ input, select {
   justify-content: space-between;
   margin: 6px 0;
 }
+
+.account-id {
+  font-size: 12px;
+  opacity: 0.7;
+  word-break: break-all;
+}

@@ -16,7 +16,11 @@
     <h3>Your accounts</h3>
 
     <div *ngFor="let acc of accounts" class="account-row">
-      <span>{{ acc.currency }} — {{ acc.balance }}</span>
+        <span>
+        {{ acc.currency }} — {{ acc.balance }}
+        <br>
+        <small class="account-id">ID: {{ acc.id }}</small>
+        </span>
       <button (click)="showTransactions(acc.id)">Transactions</button>
     </div>
   </div>

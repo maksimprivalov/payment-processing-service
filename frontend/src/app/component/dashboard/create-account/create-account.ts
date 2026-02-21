@@ -14,12 +14,25 @@ export class CreateAccount {
 
   currency = 'EUR';
   success = '';
+  error = '';
+  loading = false;
 
   constructor(private api: ApiService) {}
 
-  create() {
-    this.api.createAccount(this.currency).subscribe(() => {
-      this.success = 'Account created';
-    });
-  }
+create() {
+  this.success = '';
+  this.error = '';
+  this.loading = true;
+
+  this.api.createAccount(this.currency).subscribe({
+    next: () => {
+      this.success = 'Account created successfully';
+      this.loading = false;
+    },
+    error: () => {
+      this.error = 'Failed to create account';
+      this.loading = false;
+    }
+  });
+}
 }
