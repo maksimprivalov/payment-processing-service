@@ -20,9 +20,13 @@ export class ApiService {
   register(data: any) {
     return this.http.post(`${this.auth}/register`, data);
   }
+  
+  createAccount(currency: string) {
+    return this.http.post(`${this.saga}/accounts`, { currency });
+  }
 
   getAccounts() {
-    return this.http.get(`${this.auth}/accounts`);
+    return this.http.get(`${this.saga}/accounts`);
   }
 
   credit(accountId: string, amount: number) {

@@ -1,0 +1,12 @@
+<div class="card">
+  <h3>Create account</h3>
+
+  <select [(ngModel)]="currency">
+    <option value="EUR">EUR</option>
+    <option value="USD">USD</option>
+  </select>
+
+  <button (click)="create()">Create</button>
+
+  <p *ngIf="success">{{ success }}</p>
+</div>
