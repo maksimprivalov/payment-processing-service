@@ -19,6 +19,11 @@
       {{ loading ? 'Creating...' : 'Register' }}
     </button>
 
+  <div class="switch-auth">
+    <span>Already have an account? </span>
+    <button routerLink="/login">Sign in</button>
+  </div>
+
     <p class="success" *ngIf="success">{{ success }}</p>
     <p class="error" *ngIf="error">{{ error }}</p>
 
