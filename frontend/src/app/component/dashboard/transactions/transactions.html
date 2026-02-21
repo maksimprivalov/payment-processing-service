@@ -1,0 +1,19 @@
+<div class="card">
+  <h3>Transactions</h3>
+
+  <div *ngIf="!transactions?.length" class="empty">
+    Empty
+  </div>
+
+  <div *ngFor="let t of transactions" class="tx-row">
+    <div class="tx-main">
+      <strong>{{ t.entry_type }}</strong>
+      <span class="amount">{{ t.amount }}</span>
+    </div>
+
+    <div class="tx-meta">
+      <span>ID: {{ t.payment_id }}</span>
+      <span>{{ t.created_at | date:'medium' }}</span>
+    </div>
+  </div>
+</div>

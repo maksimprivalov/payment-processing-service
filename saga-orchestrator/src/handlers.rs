@@ -3,8 +3,10 @@ use reqwest::Client;
 use uuid::Uuid;
 use axum::http::HeaderMap;
 use headers::{Authorization, authorization::Bearer};
+use axum::extract::Path;
 
 use crate::{config::Config, error::AppError, models::TransferRequest};
+use crate::models::{AmountRequest, CreateAccountRequest};
 
 pub async fn transfer(
     State(config): State<Config>,
@@ -14,14 +16,7 @@ pub async fn transfer(
 
     let client = Client::new();
     // getting token
-    let auth_header = headers
-        .get(axum::http::header::AUTHORIZATION)
-        .and_then(|value| value.to_str().ok())
-        .ok_or(AppError::ServiceCall)?;
-
-    let token = auth_header
-        .strip_prefix("Bearer ")
-        .ok_or(AppError::ServiceCall)?;
+let token = extract_token(&headers)?;
 
     if payload.from_account == payload.to_account {
         println!("Fraud attempt: same account transfer");
@@ -196,4 +191,113 @@ async fn audit_success(client: &Client, config: &Config) {
         }))
         .send()
         .await;
+}
+
+pub async fn get_accounts(
+    State(config): State<Config>,
+    headers: HeaderMap,
+) -> Result<Json<serde_json::Value>, AppError> {
+
+let token = extract_token(&headers)?;
+
+    let client = Client::new();
+
+    let res = client
+        .get(format!("{}/accounts", config.account_url))
+        .bearer_auth(token)
+        .send()
+        .await
+        .map_err(|_| AppError::ServiceCall)?;
+
+    let body = res.json::<serde_json::Value>()
+        .await
+        .map_err(|_| AppError::ServiceCall)?;
+
+    Ok(Json(body))
+}
+
+pub async fn credit_account(
+    State(config): State<Config>,
+    headers: HeaderMap,
+    Path(id): Path<Uuid>,
+    Json(payload): Json<AmountRequest>,
+) -> Result<Json<serde_json::Value>, AppError> {
+
+let token = extract_token(&headers)?;
+
+    let client = Client::new();
+
+    let res = client
+        .post(format!("{}/accounts/{}/credit", config.account_url, id))
+        .bearer_auth(token)
+        .json(&payload)
+        .send()
+        .await
+        .map_err(|_| AppError::ServiceCall)?;
+
+    let body = res.json::<serde_json::Value>()
+        .await
+        .map_err(|_| AppError::ServiceCall)?;
+
+    Ok(Json(body))
+}
+
+pub async fn get_transactions(
+    State(config): State<Config>,
+    headers: HeaderMap,
+    Path(account_id): Path<Uuid>,
+) -> Result<Json<serde_json::Value>, AppError> {
+
+let token = extract_token(&headers)?;
+    let client = Client::new();
+
+    let res = client
+        .get(format!("{}/ledger/{}", config.ledger_url, account_id))
+        .bearer_auth(token)
+        .send()
+        .await
+        .map_err(|_| AppError::ServiceCall)?;
+
+    let body = res.json::<serde_json::Value>()
+        .await
+        .map_err(|_| AppError::ServiceCall)?;
+
+    Ok(Json(body))
+}
+pub async fn create_account(
+    State(config): State<Config>,
+    headers: HeaderMap,
+    Json(payload): Json<CreateAccountRequest>,
+) -> Result<Json<serde_json::Value>, AppError> {
+
+    let token = extract_token(&headers)?;
+    let client = Client::new();
+
+    let res = client
+        .post(format!("{}/accounts", config.account_url))
+        .bearer_auth(token)
+        .json(&payload)
+        .send()
+        .await
+        .map_err(|_| AppError::ServiceCall)?;
+
+    if !res.status().is_success() {
+        return Err(AppError::ServiceCall);
+    }
+
+    let body = res.json::<serde_json::Value>()
+        .await
+        .map_err(|_| AppError::ServiceCall)?;
+
+    Ok(Json(body))
+}
+fn extract_token(headers: &HeaderMap) -> Result<&str, AppError> {
+    let auth_header = headers
+        .get(axum::http::header::AUTHORIZATION)
+        .and_then(|value| value.to_str().ok())
+        .ok_or(AppError::ServiceCall)?;
+
+    auth_header
+        .strip_prefix("Bearer ")
+        .ok_or(AppError::ServiceCall)
 }

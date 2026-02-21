@@ -3,13 +3,22 @@ mod handlers;
 mod error;
 mod models;
 
-use axum::{Router, routing::post};
+use axum::{
+    Router,
+    routing::{post, get},
+};
 use dotenvy::dotenv;
 use tokio::net::TcpListener;
 use tower_http::cors::CorsLayer;
 
 use config::Config;
-use handlers::transfer;
+use handlers::{
+    transfer,
+    get_accounts,
+    credit_account,
+    get_transactions,
+    create_account
+};
 
 #[tokio::main]
 async fn main() {
@@ -19,6 +28,10 @@ async fn main() {
 
     let app = Router::new()
         .route("/transfer", post(transfer))
+        .route("/accounts", get(get_accounts))
+        .route("/accounts/:id/credit", post(credit_account))
+        .route("/transactions/:account_id", get(get_transactions))
+        .route("/accounts", post(create_account))
         .layer(CorsLayer::permissive())
         .with_state(config);
 

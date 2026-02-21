@@ -1,4 +1,5 @@
 use axum::{Json, extract::{State, Extension}};
+use axum::extract::Path;
 use uuid::Uuid;
 use chrono::Utc;
 use rust_decimal::Decimal;
@@ -34,4 +35,22 @@ pub async fn create_entry(
         .map_err(|_| AppError::Database)?;
 
     Ok(Json(entry))
+}
+pub async fn get_transactions(
+    State(db): State<(Db, String)>,
+    Extension(_user_id): Extension<Uuid>,
+    Path(account_id): Path<Uuid>,
+) -> Result<Json<Vec<LedgerEntry>>, AppError> {
+
+    let entries = sqlx::query_as::<_, LedgerEntry>(
+        "SELECT * FROM ledger_entries
+         WHERE account_id = $1
+         ORDER BY created_at DESC"
+    )
+        .bind(account_id)
+        .fetch_all(&db.0)
+        .await
+        .map_err(|_| AppError::Database)?;
+
+    Ok(Json(entries))
 }

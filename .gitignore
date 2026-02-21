@@ -4,8 +4,34 @@
 target/
 **/target/
 
+# Cargo.lock (оставь если бинарный проект)
 # Cargo.lock
 
+# ========================
+# Node / Angular
+# ========================
+node_modules/
+**/node_modules/
+
+dist/
+**/dist/
+
+.angular/
+.angular/cache/
+
+out-tsc/
+tmp/
+bazel-out/
+
+npm-debug.log*
+yarn-error.log*
+testem.log
+libpeerconnection.log
+
+coverage/
+.sass-cache/
+connect.lock
+typings/
 
 # ========================
 # Logs
@@ -18,6 +44,13 @@ target/
 .vscode/
 .idea/
 *.iml
+.project
+.classpath
+.settings/
+.c9/
+*.launch
+*.sublime-workspace
+.history/
 
 # ========================
 # OS

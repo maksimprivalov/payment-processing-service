@@ -9,6 +9,7 @@ mod handlers;
 use axum::{
     Router,
     routing::post,
+    routing::get,
     middleware as axum_middleware,
 };
 use dotenvy::dotenv;
@@ -19,6 +20,7 @@ use config::Config;
 use db::init_db;
 use handlers::create_entry;
 use middleware::auth_middleware;
+use crate::handlers::get_transactions;
 
 #[tokio::main]
 async fn main() {
@@ -31,6 +33,7 @@ async fn main() {
 
     let protected = Router::new()
         .route("/ledger", post(create_entry))
+        .route("/ledger/:account_id", get(get_transactions))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,

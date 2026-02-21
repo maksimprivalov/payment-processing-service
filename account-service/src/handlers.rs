@@ -130,3 +130,18 @@ pub async fn credit(
 
     Ok(Json(account))
 }
+pub async fn get_accounts(
+    State(state): State<(Db, String)>,
+    Extension(user_id): Extension<Uuid>,
+) -> Result<Json<Vec<Account>>, AppError> {
+
+    let accounts = sqlx::query_as::<_, Account>(
+        "SELECT * FROM accounts WHERE user_id = $1 ORDER BY created_at DESC"
+    )
+        .bind(user_id)
+        .fetch_all(&state.0)
+        .await
+        .map_err(|_| AppError::Database)?;
+
+    Ok(Json(accounts))
+}

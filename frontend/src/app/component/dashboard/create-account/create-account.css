@@ -1,0 +1,38 @@
+.card {
+  border: 1px solid #000;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+/* Shared control style */
+select,
+button {
+  font: inherit;
+  padding: 6px 12px;
+  border-radius: 0;
+}
+
+select {
+  background: #fff;
+  color: #000;
+  border: 1px solid #000;
+  cursor: pointer;
+  margin-right: 8px;
+}
+
+button {
+  background: #000;
+  color: #fff;
+  border: 1px solid #000;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.success,
+.error {
+  margin-top: 10px;
+}

@@ -1,0 +1,31 @@
+<div class="auth-wrapper">
+  <div class="card">
+
+    <h1>Create account</h1>
+
+    <input
+      type="email"
+      placeholder="Email"
+      [(ngModel)]="email"
+    />
+
+    <input
+      type="password"
+      placeholder="Password"
+      [(ngModel)]="password"
+    />
+
+    <button (click)="register()" [disabled]="loading">
+      {{ loading ? 'Creating...' : 'Register' }}
+    </button>
+
+  <div class="switch-auth">
+    <span>Already have an account? </span>
+    <button routerLink="/login">Sign in</button>
+  </div>
+
+    <p class="success" *ngIf="success">{{ success }}</p>
+    <p class="error" *ngIf="error">{{ error }}</p>
+
+  </div>
+</div>

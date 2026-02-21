@@ -1,0 +1,65 @@
+.container {
+  max-width: 800px;
+  margin: 40px auto;
+  font-family: Arial, sans-serif;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.card {
+  border: 1px solid #000;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+button {
+  background: #000;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+input, select {
+  width: 100%;
+  padding: 8px;
+  margin: 6px 0;
+  border: 1px solid #000;
+}
+
+.account-row,
+.tx-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 6px 0;
+}
+
+.account-id {
+  font-size: 12px;
+  opacity: 0.7;
+  word-break: break-all;
+}
+
+.success {
+  margin-top: 10px;
+}
+
+.error {
+  margin-top: 10px;
+}
+
+.empty {
+  text-align: center;
+  padding: 20px;
+  opacity: 0.6;
+}
+
+label {
+  display: block;
+  margin-top: 10px;
+  font-size: 13px;
+}
