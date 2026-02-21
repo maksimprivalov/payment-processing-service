@@ -20,13 +20,22 @@ export class Accounts implements OnInit {
   selectedAccount: string = '';
   creditAmount: number = 0;
   
-  currentView: 'list' | 'create' | 'transfer' | 'transactions' = 'list';
+  currentView: 'list' | 'create' | 'transfer' | 'transactions' | 'topup' = 'list';
   selectedForTransactions = '';
 
   // transfer
   fromAccount = '';
   toAccount = '';
   transferAmount = 0;
+  transferSuccess = '';
+  transferError = '';
+  transferLoading = false;
+
+  topupAmount = 0;
+  topupAccount = '';
+  topupSuccess = '';
+  topupError = '';
+  topupLoading = false;
 
   transactions: any[] = [];
 
@@ -38,6 +47,14 @@ export class Accounts implements OnInit {
 
   ngOnInit() {
     this.loadAccounts();
+
+    this.api.accountsUpdated$.subscribe(() => {
+      this.loadAccounts();
+    });
+  }
+
+  goToTopup() {
+    this.currentView = 'topup';
   }
 
   goToCreate() {
@@ -56,7 +73,7 @@ export class Accounts implements OnInit {
     this.selectedForTransactions = accountId;
     this.currentView = 'transactions';
   }
-  
+
   loadAccounts() {
     this.api.getAccounts().subscribe((res: any) => {
       this.accounts = res;
@@ -74,15 +91,65 @@ export class Accounts implements OnInit {
   }
 
   transfer() {
+    this.transferSuccess = '';
+    this.transferError = '';
+
+    if (!this.fromAccount || !this.toAccount || this.transferAmount <= 0) {
+      this.transferError = 'Invalid transfer details';
+      return;
+    }
+
+    this.transferLoading = true;
+
     this.api.transfer({
       from_account: this.fromAccount,
       to_account: this.toAccount,
       amount: this.transferAmount
-    }).subscribe(() => this.loadAccounts());
+    }).subscribe({
+      next: () => {
+        this.transferSuccess = 'Successfully transferred';
+        this.transferLoading = false;
+        this.loadAccounts();
+        this.api.notifyAccountsUpdated();
+        this.fromAccount = '';
+        this.toAccount = '';
+        this.transferAmount = 0;
+      },
+      error: (err: any) => {
+        this.transferError = err?.error?.message || 'Transfer failed';
+        this.transferLoading = false;
+      }
+    });
   }
 
   loadTransactions(accountId: string) {
     this.api.getTransactions(accountId)
       .subscribe((res: any) => this.transactions = res);
+  }
+
+  topUp() {
+    this.topupSuccess = '';
+    this.topupError = '';
+
+    if (!this.topupAccount || this.topupAmount <= 0) {
+      this.topupError = 'Invalid amount or account';
+      return;
+    }
+
+    this.topupLoading = true;
+
+    this.api.credit(this.topupAccount, this.topupAmount)
+      .subscribe({
+        next: () => {
+          this.topupSuccess = 'Balance topped up';
+          this.topupLoading = false;
+          this.api.notifyAccountsUpdated();
+          this.loadAccounts();
+        },
+        error: () => {
+          this.topupError = 'Top up failed';
+          this.topupLoading = false;
+        }
+      });
   }
 }

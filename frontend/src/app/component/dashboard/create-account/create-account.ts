@@ -28,6 +28,7 @@ create() {
     next: () => {
       this.success = 'Account created successfully';
       this.loading = false;
+      this.api.notifyAccountsUpdated();
     },
     error: () => {
       this.error = 'Failed to create account';

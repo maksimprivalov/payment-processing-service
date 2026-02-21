@@ -43,3 +43,23 @@ input, select {
   opacity: 0.7;
   word-break: break-all;
 }
+
+.success {
+  margin-top: 10px;
+}
+
+.error {
+  margin-top: 10px;
+}
+
+.empty {
+  text-align: center;
+  padding: 20px;
+  opacity: 0.6;
+}
+
+label {
+  display: block;
+  margin-top: 10px;
+  font-size: 13px;
+}

@@ -1,12 +1,13 @@
 <div class="container">
 
   <div class="topbar">
-    <h2>Accounts</h2>
+    <h2>PBS Dashboard</h2>
 
     <div class="actions">
       <button (click)="goToList()">Accounts</button>
       <button (click)="goToCreate()">Create account</button>
       <button (click)="goToTransfer()">Transfer</button>
+      <button (click)="goToTopup()">Top up</button>
       <button (click)="logout()">Logout</button>
     </div>
   </div>
@@ -30,14 +31,71 @@
 
   <!-- ================= TRANSFER ================= -->
   <div *ngIf="currentView === 'transfer'" class="card">
-    <h3>Transfer</h3>
+      <h3>Transfer</h3>
 
-    <input placeholder="From account id" [(ngModel)]="fromAccount">
-    <input placeholder="To account id" [(ngModel)]="toAccount">
-    <input type="number" placeholder="Amount" [(ngModel)]="transferAmount">
+    <div *ngIf="!accounts?.length" class="empty">
+        No accounts available
+    </div>
 
-    <button (click)="transfer()">Send</button>
+    <ng-container *ngIf="accounts?.length">
+
+        <!-- from account -->
+        <label>From account</label>
+        <select [(ngModel)]="fromAccount">
+        <option value="" disabled>Select account</option>
+        <option *ngFor="let acc of accounts" [value]="acc.id">
+            {{ acc.currency }} — {{ acc.id }}
+        </option>
+        </select>
+
+        <!-- to account -->
+        <label>To account ID</label>
+        <input placeholder="Recipient account id" [(ngModel)]="toAccount">
+
+        <!-- amount -->
+        <label>Amount</label>
+        <input type="number" placeholder="Amount" [(ngModel)]="transferAmount">
+
+        <button (click)="transfer()">Send</button>
+
+    </ng-container>
+
+    <p class="success" *ngIf="transferSuccess">{{ transferSuccess }}</p>
+    <p class="error" *ngIf="transferError">{{ transferError }}</p>
   </div>
+
+  <!-- ================= TOP UP ================= -->
+    <div *ngIf="currentView === 'topup'" class="card">
+    <h3>Top up balance</h3>
+
+    <div *ngIf="!accounts?.length" class="empty">
+        No accounts available
+    </div>
+
+    <ng-container *ngIf="accounts?.length">
+
+        <select [(ngModel)]="topupAccount">
+        <option value="" disabled selected>Select account</option>
+        <option *ngFor="let acc of accounts" [value]="acc.id">
+            {{ acc.currency }} — {{ acc.id }}
+        </option>
+        </select>
+
+        <input
+        type="number"
+        placeholder="Amount"
+        [(ngModel)]="topupAmount"
+        >
+
+        <button (click)="topUp()" [disabled]="topupLoading">
+        {{ topupLoading ? 'Processing...' : 'Top up' }}
+        </button>
+
+        <p class="success" *ngIf="topupSuccess">{{ topupSuccess }}</p>
+        <p class="error" *ngIf="topupError">{{ topupError }}</p>
+
+    </ng-container>
+    </div>
 
   <!-- ================= TRANSACTIONS ================= -->
   <app-transactions
