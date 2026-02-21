@@ -2,32 +2,30 @@
 
   <div class="topbar">
     <h2>Accounts</h2>
-    <button (click)="logout()">Logout</button>
+
+    <div class="actions">
+      <button (click)="goToList()">Accounts</button>
+      <button (click)="goToCreate()">Create account</button>
+      <button (click)="goToTransfer()">Transfer</button>
+      <button (click)="logout()">Logout</button>
+    </div>
   </div>
 
-  <div class="card">
+  <!-- ================= LIST ================= -->
+  <div *ngIf="currentView === 'list'" class="card">
     <h3>Your accounts</h3>
 
     <div *ngFor="let acc of accounts" class="account-row">
       <span>{{ acc.currency }} — {{ acc.balance }}</span>
-      <button (click)="loadTransactions(acc.id)">Transactions</button>
+      <button (click)="showTransactions(acc.id)">Transactions</button>
     </div>
   </div>
 
-  <div class="card">
-    <h3>Top up</h3>
+  <!-- ================= CREATE ================= -->
+  <app-create-account *ngIf="currentView === 'create'"></app-create-account>
 
-    <select [(ngModel)]="selectedAccount">
-      <option *ngFor="let acc of accounts" [value]="acc.id">
-        {{ acc.currency }} — {{ acc.id }}
-      </option>
-    </select>
-
-    <input type="number" placeholder="Amount" [(ngModel)]="creditAmount">
-    <button (click)="credit()">Top up</button>
-  </div>
-
-  <div class="card">
+  <!-- ================= TRANSFER ================= -->
+  <div *ngIf="currentView === 'transfer'" class="card">
     <h3>Transfer</h3>
 
     <input placeholder="From account id" [(ngModel)]="fromAccount">
@@ -37,12 +35,10 @@
     <button (click)="transfer()">Send</button>
   </div>
 
-  <div class="card" *ngIf="transactions.length">
-    <h3>Transactions</h3>
-
-    <div *ngFor="let t of transactions" class="tx-row">
-      {{ t.entry_type }} — {{ t.amount }}
-    </div>
-  </div>
+  <!-- ================= TRANSACTIONS ================= -->
+  <app-transactions
+    *ngIf="currentView === 'transactions'"
+    [accountId]="selectedForTransactions">
+  </app-transactions>
 
 </div>

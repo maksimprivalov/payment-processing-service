@@ -4,11 +4,13 @@ import { ApiService } from '../../../service/api.service';
 import { AuthService } from '../../../service/auth.service';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { CreateAccount } from '../create-account/create-account';
+import { Transactions } from '../transactions/transactions';
 
 @Component({
   selector: 'app-accounts',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CreateAccount, Transactions],
   templateUrl: './accounts.html',
   styleUrls: ['./accounts.css']
 })
@@ -17,6 +19,9 @@ export class Accounts implements OnInit {
   accounts: any[] = [];
   selectedAccount: string = '';
   creditAmount: number = 0;
+  
+  currentView: 'list' | 'create' | 'transfer' | 'transactions' = 'list';
+  selectedForTransactions = '';
 
   // transfer
   fromAccount = '';
@@ -35,6 +40,23 @@ export class Accounts implements OnInit {
     this.loadAccounts();
   }
 
+  goToCreate() {
+    this.currentView = 'create';
+  }
+
+  goToTransfer() {
+    this.currentView = 'transfer';
+  }
+
+  goToList() {
+    this.currentView = 'list';
+  }
+
+  showTransactions(accountId: string) {
+    this.selectedForTransactions = accountId;
+    this.currentView = 'transactions';
+  }
+  
   loadAccounts() {
     this.api.getAccounts().subscribe((res: any) => {
       this.accounts = res;

@@ -1,0 +1,11 @@
+.card {
+  border: 1px solid #000;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.tx-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 6px 0;
+}

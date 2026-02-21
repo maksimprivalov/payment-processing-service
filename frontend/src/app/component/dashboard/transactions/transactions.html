@@ -1,0 +1,8 @@
+<div class="card" *ngIf="transactions.length">
+  <h3>Transactions</h3>
+
+  <div *ngFor="let t of transactions" class="tx-row">
+    <span>{{ t.entry_type }}</span>
+    <span>{{ t.amount }}</span>
+  </div>
+</div>
