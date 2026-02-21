@@ -22,31 +22,26 @@ export class ApiService {
   }
 
   getAccounts() {
-    return this.http.get(`${this.saga}/accounts`, {
-      headers: { Authorization: 'Bearer ' + this.token }
-    });
+    return this.http.get(`${this.auth}/accounts`);
   }
 
   credit(accountId: string, amount: number) {
     return this.http.post(
       `${this.saga}/accounts/${accountId}/credit`,
-      { amount },
-      { headers: { Authorization: 'Bearer ' + this.token } }
+      { amount }
     );
   }
 
   transfer(data: any) {
     return this.http.post(
       `${this.saga}/transfer`,
-      data,
-      { headers: { Authorization: 'Bearer ' + this.token } }
+      data
     );
   }
 
   getTransactions(accountId: string) {
     return this.http.get(
-      `${this.saga}/transactions/${accountId}`,
-      { headers: { Authorization: 'Bearer ' + this.token } }
+      `${this.saga}/transactions/${accountId}`
     );
   }
 }

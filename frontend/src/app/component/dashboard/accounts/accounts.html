@@ -1,1 +1,48 @@
-<p>accounts works!</p>
+<div class="container">
+
+  <div class="topbar">
+    <h2>Accounts</h2>
+    <button (click)="logout()">Logout</button>
+  </div>
+
+  <div class="card">
+    <h3>Your accounts</h3>
+
+    <div *ngFor="let acc of accounts" class="account-row">
+      <span>{{ acc.currency }} — {{ acc.balance }}</span>
+      <button (click)="loadTransactions(acc.id)">Transactions</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Top up</h3>
+
+    <select [(ngModel)]="selectedAccount">
+      <option *ngFor="let acc of accounts" [value]="acc.id">
+        {{ acc.currency }} — {{ acc.id }}
+      </option>
+    </select>
+
+    <input type="number" placeholder="Amount" [(ngModel)]="creditAmount">
+    <button (click)="credit()">Top up</button>
+  </div>
+
+  <div class="card">
+    <h3>Transfer</h3>
+
+    <input placeholder="From account id" [(ngModel)]="fromAccount">
+    <input placeholder="To account id" [(ngModel)]="toAccount">
+    <input type="number" placeholder="Amount" [(ngModel)]="transferAmount">
+
+    <button (click)="transfer()">Send</button>
+  </div>
+
+  <div class="card" *ngIf="transactions.length">
+    <h3>Transactions</h3>
+
+    <div *ngFor="let t of transactions" class="tx-row">
+      {{ t.entry_type }} — {{ t.amount }}
+    </div>
+  </div>
+
+</div>
