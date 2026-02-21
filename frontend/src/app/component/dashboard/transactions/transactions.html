@@ -6,7 +6,14 @@
   </div>
 
   <div *ngFor="let t of transactions" class="tx-row">
-    <span>{{ t.entry_type }}</span>
-    <span>{{ t.amount }}</span>
+    <div class="tx-main">
+      <strong>{{ t.entry_type }}</strong>
+      <span class="amount">{{ t.amount }}</span>
+    </div>
+
+    <div class="tx-meta">
+      <span>ID: {{ t.payment_id }}</span>
+      <span>{{ t.created_at | date:'medium' }}</span>
+    </div>
   </div>
 </div>

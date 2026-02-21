@@ -37,7 +37,7 @@ export class Login {
         this.auth.login(res.token);
         this.router.navigate(['/accounts']);
         this.loading = false;
-        alert('Login successful');
+        // alert('Login successful');
       },
       error: () => {
         this.loading = false;
