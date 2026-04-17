@@ -1,135 +1,103 @@
-# Mini Payment Processing System
-##### Microservice-based application using Rust.
+# Payment Processing Service
 
-## 1. Problem Description
-Modern financial systems must process monetary transactions in a **reliable**, **secure**, and **consistent manner**. Even in simplified environments, payment systems must ensure **correctness of balances**, **prevent duplicate execution of requests**, and **provide traceability of all operations**.
+A full-stack, microservice-based payment processing system built in **Rust**, demonstrating core principles of financial backend engineering: distributed transaction consistency, double-entry accounting, idempotent payment handling, and end-to-end auditability.
 
-The goal of this project is to design and implement a **mini payment processing system** that demonstrates the fundamental principles of *financial transaction processing* using a microservice architecture. The system focuses on **correctness**, **separation of responsibilities**, and basic **fault-prevention mechanisms** rather than **real-world banking protocols**.
+## Demo
 
-## 2. Overview of the Solution
-The proposed solution is a *microservice-based backend system* implemented in Rust.
-Each microservice has a clearly defined responsibility and its own database, following the principles of *loose coupling and high cohesion*.
+  ![Transfer flow](readme_assets/pps.gif)
 
-The system supports:
-- user authentication and authorization,
-- management of financial accounts,
-- execution of money transfers,
-- consistent bookkeeping using double-entry accounting,
-- auditing and logging of all relevant operations.
 
-Inter-service communication is implemented via RESTful APIs, while access to protected resources is secured using JWT-based authentication.
-## 3. System Architecture
-The system consists of the following microservices:
-### 3.1. Authentication & User Service
+## Motivation
 
-Responsibilities:
-- user registration,
-- user authentication,
-- issuing and validation of JWT tokens,
-- basic authorization support
+Financial systems have uniquely strict correctness requirements - money must never be created or destroyed due to a software failure, every operation must be traceable, and duplicate execution of a payment must be safely rejected. This project was built to explore and implement those constraints from first principles, without relying on managed payment infrastructure.
 
-Data model *approximately*:
-- User (id, email, password_hash, status)
 
-Interactions:
-- Frontend communicates with this service for login and registration.
-- Other services validate incoming requests using JWT tokens issued by this service.
+## Architecture
 
-### 3.2. Account Service
-Responsibilities:
-- management of user financial accounts,
-- storing and updating account balances,
-- validating whether sufficient funds are available for transactions.
+The system is decomposed into six independently deployable services, each owning its own PostgreSQL database - no shared state, no cross-service DB access.
 
-Data model *approximately*:
-- Account (account_id, user_id, balance, currency)
+| Service | Responsibility |
+|---|---|
+| **Auth Service** | User registration, login, JWT issuance & validation |
+| **Account Service** | Account lifecycle, balance storage, debit/credit operations |
+| **Payment Service** | Payment record management, idempotency enforcement, status tracking |
+| **Ledger Service** | Double-entry bookkeeping - every transfer produces a paired DEBIT + CREDIT entry |
+| **Audit Service** | Append-only event log of all system actions and outcomes |
+| **Saga Orchestrator** | Coordinates the distributed payment workflow across all services |
 
-Interactions:
-- *Payment Service* queries *Account Service* **to verify account balance**.
-- *Ledger Service* references account identifiers during bookkeeping operations.
+An **Angular** frontend serves as the client, communicating with the orchestrator and auth service through an **nginx** reverse proxy.
 
-### 3.3. Payment Service
-**Responsibilities**:
-- processing money transfer requests between accounts,
-- validation of business rules (e.g., prevention of negative balances),
-- coordination of transaction execution across services,
-- idempotent request handling to prevent duplicate transaction execution.
 
-**Data model** *approximately*:
-- Payment (payment_id, from_account, to_account, amount, status)
+## Key Financial Engineering Concepts
 
-**Interactions**:
-- communicates with *Account Service* to validate balances,
-- invokes *Ledger Service* to record financial transactions,
-- reports transaction outcomes to the *Audit Service*.
+### Orchestrated Saga Pattern
+Rather than using distributed ACID transactions (which don't exist across independent databases), the system implements an **Orchestrated Saga** - a sequence of local transactions with explicit compensating actions on failure.
 
-### 3.4. Ledger Service (Double-Entry Accounting)
-**Responsibilities**:
-- maintaining a consistent financial ledger,
-- implementing double-entry accounting principles,
-- ensuring that each transaction is recorded as a debit and a credit entry.
+Payment execution flow:
+1. Create payment record (status: PENDING)
+2. Debit source account
+3. Record DEBIT entry in ledger
+4. Credit destination account
+5. Record CREDIT entry in ledger
+6. Mark payment as COMPLETED
+7. Write SUCCESS event to audit log
 
-**Data model** *approximately*:
-- LedgerEntry (entry_id, account_id, debit, credit, timestamp)
+If any step fails, the orchestrator executes compensating transactions in reverse - reversing debits/credits, creating offsetting ledger entries, marking the payment FAILED, and recording the failure reason in the audit log. This guarantees **no partial state**: money is never debited without appearing in the ledger.
 
-Each completed payment generates **two ledger entries**:
-- a debit entry for the sender's account,
-- a credit entry for the receiver's account.
+### Double-Entry Accounting
+The Ledger Service enforces the fundamental principle of accounting: every transaction generates exactly two entries - a debit from one account and a credit to another. This makes the ledger self-consistent and auditable; the sum of all debits always equals the sum of all credits.
 
-### 3.5. Audit / Transaction Log Service
-**Responsibilities**:
-- logging all transaction attempts and system events,
-- storing historical data for traceability and debugging,
-- enabling post-analysis of system behavior.
+<img src="readme_assets/ledger.png" width="700">
 
-**Data model** *approximately*:
-- AuditEvent (event_id, service_name, action, status, timestamp)
+### Idempotency & Basic Fraud Prevention
+The Payment Service tracks payment state, preventing duplicate execution of the same payment. The orchestrator also rejects semantically invalid requests at the boundary - same-account transfers and non-positive amounts are caught before any state changes occur.
 
-## 4. Communication and Data Management
+<img src="readme_assets/payment.png" width="700">
 
-- Services communicate exclusively via REST APIs.
-- JWT tokens are used to authorize requests between services.
-- Each microservice owns its **separate database** and does not directly access data from other services.
-- Data consistency is ensured through controlled service interactions rather than shared databases.
+### Audit Trail
+Every system action - successful or failed - is recorded in an append-only 
+event log. No entry is ever modified or deleted, making the full history 
+of any payment fully traceable.
 
-## 5.  Distributed Transaction Consistency (Saga Pattern)
+<img src="readme_assets/audit.png" width="700">
 
-To ensure consistency between microservices during payment processing, the system implements an *Orchestrated **Saga***. A dedicated *Saga Orchestrator Service* coordinates the distributed workflow:
-- Debit source account
-- Record debit in ledger
-- Credit destination account
-- Record credit in ledger
-- Mark payment as completed
-- Log the transaction in the audit service
+### JWT-Based Inter-Service Authorization
+All protected endpoints require a JWT issued by the Auth Service. The token is propagated by the frontend through the orchestrator to downstream services, which validate it independently - no single auth bottleneck.
 
-**If any step fails, compensating actions restore previous state:**
-- reversing debits/credits in Account Service
-- creating compensating ledger entries
-- marking payments as failed
-- writing failure events into the Audit Service
 
-This prevents inconsistencies, such as money being debited without appearing in the ledger, and guarantees system-wide transactional integrity without distributed ACID transactions.
+## Technology Stack
 
-## 6. Technologies Used
+- **Rust** - primary language for all backend services
+- **Axum** - async HTTP framework (Tower ecosystem)
+- **PostgreSQL** - one isolated database per service
+- **SQLx** - compile-time verified async SQL
+- **Docker & Docker Compose** - full containerized deployment
+- **nginx** - reverse proxy, port isolation, static frontend serving
+- **Angular** - frontend SPA
+- **JWT** - stateless authentication across services
 
-- Rust (primary programming language)
-- Web framework: Axum (or Actix-web)
-- Database: PostgreSQL (one per service)
-- Authentication: JWT
-- Containerization: Docker & Docker Compose
-- Saga for consistency between services
-- Data serialization: JSON
 
-## 7. Project Limitations and Conclusion
+## What This Demonstrates
 
-This project is *intended for educational purposes only* and does not implement:
-- real-world banking or payment protocols,
-- regulatory compliance standards (e.g., PCI-DSS),
-- real-time settlement systems.
+- Practical application of the **Saga pattern** for distributed transaction management - a standard approach in production payment systems (Stripe, Adyen, and similar platforms use equivalent patterns at scale)
+- Understanding of **double-entry accounting** as a correctness mechanism, not just a bookkeeping convention
+- **Database-per-service** isolation and the trade-offs it introduces (eventual consistency vs. strong isolation)
+- Secure service-to-service communication with propagated authentication tokens
+- Building financial systems in **Rust** - a language increasingly adopted in fintech for its memory safety guarantees and performance characteristics
 
-The focus is on demonstrating architectural and implementation principles rather than production-level financial systems.
+## How to Run
 
----
-Overall the implemented system provides a clear and structured example of a simplified payment processing platform. Through the use of microservices, strict responsibility separation, and fundamental fintech concepts, the project demonstrates practical application of backend development and distributed system principles using Rust.
+  **Prerequisites:** Docker & Docker Compose 
+  (plus Docker Desktop for Windows users)
 
-Technologies may *a bit* change while implementing.
+  ```bash
+  git clone https://github.com/maksimprivalov/payment-processing-service.git
+
+  cd payment-processing-service
+
+  docker compose up --build
+  ```
+
+  Open http://localhost:4200 in your browser.
+
+  Also, you may need to apply migrations for each of the service database, e.g. for account service ```/account-service/migrations/001_init.sql```

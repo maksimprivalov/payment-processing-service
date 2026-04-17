@@ -16,7 +16,7 @@ pub async fn transfer(
 
     let client = Client::new();
     // getting token
-let token = extract_token(&headers)?;
+    let token = extract_token(&headers)?;
 
     if payload.from_account == payload.to_account {
         println!("Fraud attempt: same account transfer");
@@ -86,6 +86,7 @@ let token = extract_token(&headers)?;
         mark_payment_failed(&client, &config, token, &payment_id).await;
         return Err(AppError::ServiceCall);
     }
+    
     println!("STEP 4: credit...");
     // Credit
     let credit_res = client
